@@ -1,0 +1,22 @@
+import User from "../models/User.js";
+
+export function findAll(){
+    return User.find().sort({createdAt:-1});
+}
+
+export function findById(id){
+    return User.findById(id);
+}
+
+export function create(data){
+    const user = new User(data);
+    return user.save();
+}
+
+export function updateById(id, data){
+    return User.findByIdAndUpdate(id, data, {new:true});
+}
+
+export function deleteById(id){
+    return User.findByIdAndDelete(id);
+}
