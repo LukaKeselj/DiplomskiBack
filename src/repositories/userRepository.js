@@ -8,6 +8,10 @@ export function findById(id){
     return User.findById(id);
 }
 
+export function findByEmail(email){
+    return User.findOne({email});
+}
+
 export function create(data){
     const user = new User(data);
     return user.save();
