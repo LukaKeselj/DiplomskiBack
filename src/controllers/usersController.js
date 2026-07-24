@@ -29,10 +29,10 @@ export async function deleteUser(req,res){
 
 export async function updateUser(req,res){
     try{
-        const {name,surname,username,email,password,currentPassword,height,profileImage}=req.body;
+        const {name,surname,username,email,password,currentPassword,height,weight,profileImage}=req.body;
         const updatedUser = await userService.updateUser(
             req.params.id,
-            {name,surname,username,email,password,height,profileImage},
+            {name,surname,username,email,password,height,weight,profileImage},
             {requesterId: req.userId, currentPassword}
         );
         res.status(200).json(updatedUser);

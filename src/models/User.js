@@ -26,6 +26,9 @@ const userSchema=new mongoose.Schema({
         type: Number,
         required: true,
     },
+    weight:{
+        type: Number,
+    },
     profileImage:{
         type: String,
         default: "",

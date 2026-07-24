@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import usersRouter from "./routers/usersRouter.js";
 import authRouter from "./routers/authRouter.js";
+import exercisesRouter from "./routers/exercisesRouter.js";
 import { connectDB } from "./config/db.js";
 import rateLimiter from "./middleware/rateLimiter.js";
 
@@ -17,6 +18,7 @@ app.use(rateLimiter);
 
 app.use("/api/users",usersRouter);
 app.use("/api/auth",authRouter);
+app.use("/api/exercises",exercisesRouter);
 
 connectDB().then(()=>{
     app.listen(PORT,()=>{
