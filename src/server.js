@@ -11,7 +11,7 @@ const app = express();
 
 app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173" }));
 
-app.use(express.json()); // middleware parses json body
+app.use(express.json({ limit: "5mb" })); // middleware parses json body (raised to fit base64 profile images)
 
 app.use(rateLimiter);
 

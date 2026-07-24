@@ -25,3 +25,7 @@ export function updateById(id, data){
 export function deleteById(id){
     return User.findByIdAndDelete(id);
 }
+
+export function setBlockedStatus(id, isBlocked){
+    return User.findByIdAndUpdate(id, {isBlocked}, {new:true});
+}

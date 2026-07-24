@@ -8,6 +8,7 @@ import { AppError } from "../errors/AppError.js";
 
 const EMAIL_VERIFICATION_PURPOSE = "email-verification";
 const GOOGLE_REGISTRATION_PURPOSE = "google-registration";
+const PASSWORD_RESET_PURPOSE = "password-reset";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -63,6 +64,39 @@ export async function verifyEmailToken(token){
     return toPublicUser(user);
 }
 
+export function generatePasswordResetToken(userId){
+    return jwt.sign({id: userId, purpose: PASSWORD_RESET_PURPOSE}, process.env.JWT_SECRET, {expiresIn: "30m"});
+}
+
+export async function requestPasswordReset(email){
+    const user = await userRepository.findByEmail(email);
+    if(!user) return;
+
+    const resetToken = generatePasswordResetToken(user._id);
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+
+    await mailService.sendPasswordResetEmail(user.email, resetUrl);
+}
+
+export async function resetPassword(token, newPassword){
+    let decoded;
+    try{
+        decoded = jwt.verify(token, process.env.JWT_SECRET);
+    }catch(error){
+        throw new AppError("Link za reset šifre je nevažeći ili je istekao", 400);
+    }
+
+    if(decoded.purpose !== PASSWORD_RESET_PURPOSE){
+        throw new AppError("Nevažeći link za reset šifre", 400);
+    }
+
+    const user = await userRepository.findById(decoded.id);
+    if(!user) throw new AppError("User not found", 404);
+
+    user.password = newPassword;
+    await user.save();
+}
+
 export async function login(email, password){
     const user = await userRepository.findByEmail(email);
     if(!user) throw new AppError("Invalid email or password", 401);
@@ -72,6 +106,10 @@ export async function login(email, password){
 
     if(!user.isVerified){
         throw new AppError("Please verify your email before logging in", 403);
+    }
+
+    if(user.isBlocked){
+        throw new AppError("Your account has been blocked", 403);
     }
 
     const token = generateAuthToken(user);
@@ -98,6 +136,10 @@ export async function googleAuth(idToken){
     const existingUser = await userRepository.findByEmail(payload.email);
 
     if(existingUser){
+        if(existingUser.isBlocked){
+            throw new AppError("Your account has been blocked", 403);
+        }
+
         if(!existingUser.isVerified){
             existingUser.isVerified = true;
             await existingUser.save();
