@@ -7,7 +7,10 @@ import {
     completeGoogleRegistration,
     forgotPassword,
     resetPassword,
+    logout,
+    me,
 } from "../controllers/authController.js";
+import { requireAuth } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -18,5 +21,7 @@ router.post("/google", googleLogin);
 router.post("/google/complete", completeGoogleRegistration);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
+router.post("/logout", logout);
+router.get("/me", requireAuth, me);
 
 export default router;

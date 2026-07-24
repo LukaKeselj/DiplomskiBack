@@ -1,12 +1,23 @@
 import jwt from "jsonwebtoken";
 
-export function requireAuth(req,res,next){
-    const authHeader = req.headers.authorization;
-    if(!authHeader || !authHeader.startsWith("Bearer ")){
-        return res.status(401).json({message:"Authentication required"});
+function extractToken(req){
+    if(req.cookies?.token){
+        return req.cookies.token;
     }
 
-    const token = authHeader.split(" ")[1];
+    const authHeader = req.headers.authorization;
+    if(authHeader && authHeader.startsWith("Bearer ")){
+        return authHeader.split(" ")[1];
+    }
+
+    return null;
+}
+
+export function requireAuth(req,res,next){
+    const token = extractToken(req);
+    if(!token){
+        return res.status(401).json({message:"Authentication required"});
+    }
 
     try{
         const decoded = jwt.verify(token, process.env.JWT_SECRET);

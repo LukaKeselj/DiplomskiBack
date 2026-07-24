@@ -9,7 +9,8 @@
     "migrate:create": "migrate-mongo create",
     "migrate:up": "migrate-mongo up",
     "migrate:down": "migrate-mongo down",
-    "migrate:status": "migrate-mongo status"
+    "migrate:status": "migrate-mongo status",
+    "seed:exercises": "node src/scripts/seedExercises.js"
   },
   "repository": {
     "type": "git",
@@ -27,6 +28,7 @@
     "@upstash/ratelimit": "^2.0.5",
     "@upstash/redis": "^1.34.9",
     "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^4.18.2",
