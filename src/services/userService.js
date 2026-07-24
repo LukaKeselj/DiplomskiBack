@@ -14,8 +14,8 @@ function assertValidId(id){
     }
 }
 
-export async function getAllUsers(){
-    const users = await userRepository.findAll();
+export async function getAllUsers(excludeId){
+    const users = await userRepository.findAll(excludeId);
     return users.map(toPublicUser);
 }
 
@@ -26,11 +26,6 @@ export async function getUserById(id){
     if(!user) throw new AppError("User not found!", 404);
 
     return toPublicUser(user);
-}
-
-export async function createUser(data){
-    const newUser = await userRepository.create(data);
-    return toPublicUser(newUser);
 }
 
 export async function updateUser(id, data){

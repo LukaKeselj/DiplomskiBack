@@ -11,20 +11,10 @@ function handleError(res, error, context){
 
 export async function getAllUsers(req,res){
     try{
-        const users = await userService.getAllUsers();
+        const users = await userService.getAllUsers(req.userId);
         res.status(200).json(users);
     }catch(error){
         handleError(res, error, "getAllUsers");
-    }
-}
-
-export async function createUser(req,res){
-    try{
-        const {name,surname,username,email,password,height}=req.body;
-        const newUser = await userService.createUser({name,surname,username,email,password,height});
-        res.status(201).json(newUser);
-    }catch(error){
-        handleError(res, error, "createUser");
     }
 }
 

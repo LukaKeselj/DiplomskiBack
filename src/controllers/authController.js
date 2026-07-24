@@ -1,16 +1,63 @@
 import * as authService from "../services/authService.js";
 import { AppError } from "../errors/AppError.js";
 
+function handleError(res, error, context){
+    if(error instanceof AppError){
+        return res.status(error.statusCode).json({message: error.message});
+    }
+    console.error(`Error in ${context} controller`, error);
+    res.status(500).json({message:"Internal server error"});
+}
+
+export async function register(req,res){
+    try{
+        const {name,surname,username,email,password,height} = req.body;
+        const newUser = await authService.register({name,surname,username,email,password,height});
+        res.status(201).json(newUser);
+    }catch(error){
+        handleError(res, error, "register");
+    }
+}
+
 export async function login(req,res){
     try{
         const {email,password} = req.body;
         const result = await authService.login(email, password);
         res.status(200).json(result);
     }catch(error){
-        if(error instanceof AppError){
-            return res.status(error.statusCode).json({message: error.message});
-        }
-        console.error("Error in login controller", error);
-        res.status(500).json({message:"Internal server error"});
+        handleError(res, error, "login");
+    }
+}
+
+export async function googleLogin(req,res){
+    try{
+        const {credential} = req.body;
+        if(!credential) throw new AppError("Google credential is required", 400);
+        const result = await authService.googleAuth(credential);
+        res.status(200).json(result);
+    }catch(error){
+        handleError(res, error, "googleLogin");
+    }
+}
+
+export async function completeGoogleRegistration(req,res){
+    try{
+        const {pendingToken, username, height} = req.body;
+        const result = await authService.completeGoogleRegistration(pendingToken, {username, height});
+        res.status(201).json(result);
+    }catch(error){
+        handleError(res, error, "completeGoogleRegistration");
+    }
+}
+
+export async function verifyEmail(req,res){
+    try{
+        const {token} = req.query;
+        if(!token) throw new AppError("Verification token is required", 400);
+
+        const user = await authService.verifyEmailToken(token);
+        res.status(200).json({message:"Email verified successfully", user});
+    }catch(error){
+        handleError(res, error, "verifyEmail");
     }
 }

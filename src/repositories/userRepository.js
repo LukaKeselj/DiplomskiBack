@@ -1,7 +1,8 @@
 import User from "../models/User.js";
 
-export function findAll(){
-    return User.find().sort({createdAt:-1});
+export function findAll(excludeId){
+    const filter = excludeId ? {_id: {$ne: excludeId}} : {};
+    return User.find(filter).sort({createdAt:-1});
 }
 
 export function findById(id){

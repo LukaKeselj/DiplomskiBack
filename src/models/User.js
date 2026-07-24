@@ -24,7 +24,16 @@ const userSchema=new mongoose.Schema({
     },
     height:{
         type: Number,
-        required: true,    
+        required: true,
+    },
+    isVerified:{
+        type: Boolean,
+        default: false,
+    },
+    role:{
+        type: String,
+        enum: ["user","admin"],
+        default: "user",
     },
 },
 {timeseries:true}
