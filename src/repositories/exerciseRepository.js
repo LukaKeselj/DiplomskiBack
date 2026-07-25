@@ -20,3 +20,7 @@ export function updateById(id, data){
 export function deleteById(id){
     return Exercise.findByIdAndDelete(id);
 }
+
+export function countByIds(ids){
+    return Exercise.countDocuments({_id: {$in: ids}});
+}
