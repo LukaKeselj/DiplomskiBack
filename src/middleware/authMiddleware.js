@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { ACCESS_TOKEN_PURPOSE } from "../services/authService.js";
 
 function extractToken(req){
     if(req.cookies?.token){
@@ -21,6 +22,11 @@ export function requireAuth(req,res,next){
 
     try{
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        if(decoded.purpose !== ACCESS_TOKEN_PURPOSE){
+            return res.status(401).json({message:"Invalid or expired token"});
+        }
+
         req.userId = decoded.id;
         req.userRole = decoded.role;
         next();

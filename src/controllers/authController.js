@@ -2,24 +2,36 @@ import * as authService from "../services/authService.js";
 import * as userService from "../services/userService.js";
 import { AppError } from "../errors/AppError.js";
 
-const AUTH_COOKIE_NAME = "token";
+const ACCESS_TOKEN_COOKIE = "token";
+const REFRESH_TOKEN_COOKIE = "refreshToken";
+const REFRESH_TOKEN_PATH = "/api/auth";
 const isProduction = process.env.NODE_ENV === "production";
 
-const authCookieOptions = {
+const baseCookieOptions = {
     httpOnly: true,
     secure: isProduction,
     sameSite: "lax",
 };
 
-function setAuthCookie(res, token){
-    res.cookie(AUTH_COOKIE_NAME, token, {
-        ...authCookieOptions,
-        maxAge: 60 * 60 * 1000, // 1h, mora da prati expiresIn JWT-a
+const refreshCookieOptions = {
+    ...baseCookieOptions,
+    path: REFRESH_TOKEN_PATH,
+};
+
+function setAuthCookies(res, {accessToken, refreshToken}){
+    res.cookie(ACCESS_TOKEN_COOKIE, accessToken, {
+        ...baseCookieOptions,
+        maxAge: 15 * 60 * 1000, // 15min, mora da prati expiresIn access tokena
+    });
+    res.cookie(REFRESH_TOKEN_COOKIE, refreshToken, {
+        ...refreshCookieOptions,
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 dana
     });
 }
 
-function clearAuthCookie(res){
-    res.clearCookie(AUTH_COOKIE_NAME, authCookieOptions);
+function clearAuthCookies(res){
+    res.clearCookie(ACCESS_TOKEN_COOKIE, baseCookieOptions);
+    res.clearCookie(REFRESH_TOKEN_COOKIE, refreshCookieOptions);
 }
 
 function handleError(res, error, context){
@@ -43,8 +55,8 @@ export async function register(req,res){
 export async function login(req,res){
     try{
         const {email,password} = req.body;
-        const {token, user} = await authService.login(email, password);
-        setAuthCookie(res, token);
+        const {accessToken, refreshToken, user} = await authService.login(email, password);
+        setAuthCookies(res, {accessToken, refreshToken});
         res.status(200).json({user});
     }catch(error){
         handleError(res, error, "login");
@@ -61,7 +73,7 @@ export async function googleLogin(req,res){
             return res.status(200).json(result);
         }
 
-        setAuthCookie(res, result.token);
+        setAuthCookies(res, {accessToken: result.accessToken, refreshToken: result.refreshToken});
         res.status(200).json({isNewUser: false, user: result.user});
     }catch(error){
         handleError(res, error, "googleLogin");
@@ -71,16 +83,29 @@ export async function googleLogin(req,res){
 export async function completeGoogleRegistration(req,res){
     try{
         const {pendingToken, username, height} = req.body;
-        const {token, user} = await authService.completeGoogleRegistration(pendingToken, {username, height});
-        setAuthCookie(res, token);
+        const {accessToken, refreshToken, user} = await authService.completeGoogleRegistration(pendingToken, {username, height});
+        setAuthCookies(res, {accessToken, refreshToken});
         res.status(201).json({user});
     }catch(error){
         handleError(res, error, "completeGoogleRegistration");
     }
 }
 
+export async function refresh(req,res){
+    try{
+        const rawRefreshToken = req.cookies?.refreshToken;
+        const {accessToken, refreshToken, user} = await authService.refreshSession(rawRefreshToken);
+        setAuthCookies(res, {accessToken, refreshToken});
+        res.status(200).json({user});
+    }catch(error){
+        clearAuthCookies(res);
+        handleError(res, error, "refresh");
+    }
+}
+
 export async function logout(req,res){
-    clearAuthCookie(res);
+    await authService.revokeRefreshToken(req.cookies?.refreshToken);
+    clearAuthCookies(res);
     res.status(200).json({message:"Odjavljeni ste"});
 }
 

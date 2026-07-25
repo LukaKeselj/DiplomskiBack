@@ -16,7 +16,8 @@ const userSchema=new mongoose.Schema({
     },
     email:{
         type: String,
-        required: true,    
+        required: true,
+        unique: true,
     },
     password:{
         type: String,
@@ -47,7 +48,7 @@ const userSchema=new mongoose.Schema({
         default: "user",
     },
 },
-{timeseries:true}
+{timestamps:true}
 );
 
 userSchema.pre("save", async function(next){

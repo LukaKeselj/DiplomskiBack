@@ -3,9 +3,11 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
 import * as userRepository from "../repositories/userRepository.js";
+import * as refreshTokenRepository from "../repositories/refreshTokenRepository.js";
 import * as mailService from "./mailService.js";
 import { AppError } from "../errors/AppError.js";
 
+export const ACCESS_TOKEN_PURPOSE = "access";
 const EMAIL_VERIFICATION_PURPOSE = "email-verification";
 const GOOGLE_REGISTRATION_PURPOSE = "google-registration";
 const PASSWORD_RESET_PURPOSE = "password-reset";
@@ -18,8 +20,18 @@ function toPublicUser(userDoc){
     return user;
 }
 
-function generateAuthToken(user){
-    return jwt.sign({id: user._id, role: user.role}, process.env.JWT_SECRET, {expiresIn: "1h"});
+function generateAccessToken(user){
+    return jwt.sign(
+        {id: user._id, role: user.role, purpose: ACCESS_TOKEN_PURPOSE},
+        process.env.JWT_SECRET,
+        {expiresIn: "15m"}
+    );
+}
+
+async function issueTokens(user){
+    const accessToken = generateAccessToken(user);
+    const refreshToken = await refreshTokenRepository.create(user._id);
+    return {accessToken, refreshToken};
 }
 
 export function generateVerificationToken(userId){
@@ -27,6 +39,11 @@ export function generateVerificationToken(userId){
 }
 
 export async function register(data){
+    const existingUser = await userRepository.findByEmail(data.email);
+    if(existingUser){
+        throw new AppError("Nalog sa ovim emailom već postoji", 409);
+    }
+
     const newUser = await userRepository.create(data);
 
     const verificationToken = generateVerificationToken(newUser._id);
@@ -95,6 +112,8 @@ export async function resetPassword(token, newPassword){
 
     user.password = newPassword;
     await user.save();
+
+    await refreshTokenRepository.deleteAllForUser(user._id);
 }
 
 export async function login(email, password){
@@ -112,9 +131,42 @@ export async function login(email, password){
         throw new AppError("Your account has been blocked", 403);
     }
 
-    const token = generateAuthToken(user);
+    const {accessToken, refreshToken} = await issueTokens(user);
 
-    return {token, user: toPublicUser(user)};
+    return {accessToken, refreshToken, user: toPublicUser(user)};
+}
+
+export async function refreshSession(rawRefreshToken){
+    if(!rawRefreshToken){
+        throw new AppError("Refresh token nije prisutan", 401);
+    }
+
+    const stored = await refreshTokenRepository.findByRawToken(rawRefreshToken);
+    if(!stored || stored.expiresAt < new Date()){
+        throw new AppError("Sesija je istekla, prijavite se ponovo", 401);
+    }
+
+    const user = await userRepository.findById(stored.user);
+    if(!user){
+        await refreshTokenRepository.deleteByRawToken(rawRefreshToken);
+        throw new AppError("User not found", 404);
+    }
+    if(user.isBlocked){
+        await refreshTokenRepository.deleteByRawToken(rawRefreshToken);
+        throw new AppError("Your account has been blocked", 403);
+    }
+
+    // rotacija: stari refresh token se poništava čim se iskoristi
+    await refreshTokenRepository.deleteByRawToken(rawRefreshToken);
+
+    const {accessToken, refreshToken} = await issueTokens(user);
+
+    return {accessToken, refreshToken, user: toPublicUser(user)};
+}
+
+export async function revokeRefreshToken(rawRefreshToken){
+    if(!rawRefreshToken) return;
+    await refreshTokenRepository.deleteByRawToken(rawRefreshToken);
 }
 
 export async function googleAuth(idToken){
@@ -144,9 +196,13 @@ export async function googleAuth(idToken){
             existingUser.isVerified = true;
             await existingUser.save();
         }
+
+        const {accessToken, refreshToken} = await issueTokens(existingUser);
+
         return {
             isNewUser: false,
-            token: generateAuthToken(existingUser),
+            accessToken,
+            refreshToken,
             user: toPublicUser(existingUser),
         };
     }
@@ -199,5 +255,7 @@ export async function completeGoogleRegistration(pendingToken, {username, height
         isVerified: true,
     });
 
-    return {token: generateAuthToken(newUser), user: toPublicUser(newUser)};
+    const {accessToken, refreshToken} = await issueTokens(newUser);
+
+    return {accessToken, refreshToken, user: toPublicUser(newUser)};
 }
