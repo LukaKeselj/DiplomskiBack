@@ -5,6 +5,9 @@ import usersRouter from "./routers/usersRouter.js";
 import authRouter from "./routers/authRouter.js";
 import exercisesRouter from "./routers/exercisesRouter.js";
 import workoutPlansRouter from "./routers/workoutPlansRouter.js";
+import supplementsRouter from "./routers/supplementsRouter.js";
+import userSupplementsRouter from "./routers/userSupplementsRouter.js";
+import supplementLogsRouter from "./routers/supplementLogsRouter.js";
 import { connectDB } from "./config/db.js";
 import rateLimiter from "./middleware/rateLimiter.js";
 
@@ -24,6 +27,9 @@ app.use("/api/users",usersRouter);
 app.use("/api/auth",authRouter);
 app.use("/api/exercises",exercisesRouter);
 app.use("/api/workout-plans",workoutPlansRouter);
+app.use("/api/supplements",supplementsRouter);
+app.use("/api/user-supplements",userSupplementsRouter);
+app.use("/api/supplement-logs",supplementLogsRouter);
 
 connectDB().then(()=>{
     app.listen(PORT,()=>{

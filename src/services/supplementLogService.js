@@ -1,0 +1,73 @@
+import mongoose from "mongoose";
+import * as supplementLogRepository from "../repositories/supplementLogRepository.js";
+import * as userSupplementRepository from "../repositories/userSupplementRepository.js";
+import { AppError } from "../errors/AppError.js";
+
+function assertValidId(id){
+    if(!mongoose.Types.ObjectId.isValid(id)){
+        throw new AppError("Nevažeći ID", 400);
+    }
+}
+
+function normalizeDate(date){
+    const parsed = date ? new Date(date) : new Date();
+    if(Number.isNaN(parsed.getTime())){
+        throw new AppError("Nevažeći datum", 400);
+    }
+    parsed.setUTCHours(0, 0, 0, 0);
+    return parsed;
+}
+
+async function assertOwnsUserSupplement(supplementId, requesterId){
+    assertValidId(supplementId);
+
+    const userSupplement = await userSupplementRepository.findById(supplementId);
+    if(!userSupplement){
+        throw new AppError("Suplement nije pronađen", 404);
+    }
+    if(userSupplement.user.toString() !== requesterId){
+        throw new AppError("Nemate pristup ovom suplementu", 403);
+    }
+}
+
+export async function getAllLogs(userId, {supplement, date} = {}){
+    const filter = {};
+
+    if(supplement !== undefined){
+        assertValidId(supplement);
+        filter.supplement = supplement;
+    }
+    if(date !== undefined){
+        filter.date = normalizeDate(date);
+    }
+
+    return supplementLogRepository.findAllByUser(userId, filter);
+}
+
+export async function logSupplementTaken(userId, {supplement, date, taken}){
+    if(!supplement){
+        throw new AppError("Suplement je obavezan", 400);
+    }
+
+    await assertOwnsUserSupplement(supplement, userId);
+
+    return supplementLogRepository.upsertLog({
+        user: userId,
+        supplement,
+        date: normalizeDate(date),
+        taken: taken ?? true,
+    });
+}
+
+export async function deleteLog(id, requesterId, requesterRole){
+    assertValidId(id);
+
+    const log = await supplementLogRepository.findById(id);
+    if(!log) throw new AppError("Zapis nije pronađen", 404);
+
+    if(requesterRole !== "admin" && log.user.toString() !== requesterId){
+        throw new AppError("Nemate pristup ovom zapisu", 403);
+    }
+
+    await supplementLogRepository.deleteById(id);
+}

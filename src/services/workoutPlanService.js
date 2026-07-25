@@ -45,6 +45,7 @@ function validateDays(days){
                 exercise: entry.exercise,
                 targetSets: entry.targetSets,
                 targetReps: entry.targetReps,
+                restMinutes: entry.restMinutes,
             })),
         };
     });

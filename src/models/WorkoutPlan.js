@@ -12,6 +12,9 @@ const workoutExerciseSchema = new mongoose.Schema({
     targetReps: {
         type: Number,
     },
+    restMinutes: {
+        type: Number,
+    },
 });
 
 const workoutDaySchema = new mongoose.Schema({
