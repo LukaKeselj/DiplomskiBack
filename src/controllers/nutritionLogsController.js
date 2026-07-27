@@ -29,6 +29,16 @@ export async function getDailySummary(req,res){
     }
 }
 
+export async function getSummaryRange(req,res){
+    try{
+        const {startDate, endDate} = req.query;
+        const summary = await nutritionLogService.getSummaryRange(req.userId, startDate, endDate);
+        res.status(200).json(summary);
+    }catch(error){
+        handleError(res, error, "getSummaryRange");
+    }
+}
+
 export async function createLog(req,res){
     try{
         const {date, foodName, foodId, calories, protein, fat, carbs, fiber} = req.body;

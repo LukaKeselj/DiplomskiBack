@@ -42,3 +42,20 @@ export async function sumByUserAndDate(userId, date){
     const {_id, ...totals} = result[0];
     return totals;
 }
+
+export function sumByUserAndDateRange(userId, startDate, endDate){
+    return NutritionLog.aggregate([
+        {$match: {
+            user: new mongoose.Types.ObjectId(userId),
+            date: {$gte: startDate, $lte: endDate},
+        }},
+        {$group: {
+            _id: {$dateToString: {format: "%Y-%m-%d", date: "$date"}},
+            calories: {$sum: "$calories"},
+            protein: {$sum: "$protein"},
+            fat: {$sum: "$fat"},
+            carbs: {$sum: "$carbs"},
+            fiber: {$sum: "$fiber"},
+        }},
+    ]);
+}

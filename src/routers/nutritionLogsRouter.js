@@ -2,6 +2,7 @@ import express from "express";
 import {
     getAllLogs,
     getDailySummary,
+    getSummaryRange,
     createLog,
     updateLog,
     deleteLog,
@@ -10,6 +11,7 @@ import { requireAuth } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
+router.get("/summary/range", requireAuth, getSummaryRange);
 router.get("/summary", requireAuth, getDailySummary);
 router.get("/", requireAuth, getAllLogs);
 router.post("/", requireAuth, createLog);

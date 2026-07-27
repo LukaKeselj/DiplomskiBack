@@ -10,7 +10,9 @@
     "migrate:up": "migrate-mongo up",
     "migrate:down": "migrate-mongo down",
     "migrate:status": "migrate-mongo status",
-    "seed:exercises": "node src/scripts/seedExercises.js"
+    "seed:exercises": "node src/scripts/seedExercises.js",
+    "seed:supplements": "node src/scripts/seedSupplements.js",
+    "seed": "npm run seed:exercises && npm run seed:supplements"
   },
   "repository": {
     "type": "git",
