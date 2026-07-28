@@ -1,7 +1,9 @@
 import mongoose from "mongoose";
-import bcrypt from "bcryptjs";
 import * as userRepository from "../repositories/userRepository.js";
 import { AppError } from "../errors/AppError.js";
+import { comparePassword } from "../utils/passwordUtils.js";
+import { isValidEmail, isValidPassword } from "../utils/validators.js";
+import * as auditLogService from "./auditLogService.js";
 
 function toPublicUser(userDoc){
     const user = userDoc.toObject();
@@ -32,7 +34,15 @@ export async function getUserById(id){
 export async function updateUser(id, data, {requesterId, currentPassword} = {}){
     assertValidId(id);
 
+    if(data.email !== undefined && !isValidEmail(data.email)){
+        throw new AppError("Email adresa nije validna", 400);
+    }
+
     if(data.password && requesterId === id){
+        if(!isValidPassword(data.password)){
+            throw new AppError("Šifra mora imati najmanje 8 karaktera", 400);
+        }
+
         if(!currentPassword){
             throw new AppError("Trenutna šifra je obavezna", 400);
         }
@@ -40,7 +50,7 @@ export async function updateUser(id, data, {requesterId, currentPassword} = {}){
         const existingUser = await userRepository.findById(id);
         if(!existingUser) throw new AppError("User not found!", 404);
 
-        const passwordMatches = await bcrypt.compare(currentPassword, existingUser.password);
+        const passwordMatches = await comparePassword(currentPassword, existingUser.password);
         if(!passwordMatches){
             throw new AppError("Pogrešna trenutna šifra", 401);
         }
@@ -52,18 +62,22 @@ export async function updateUser(id, data, {requesterId, currentPassword} = {}){
     return toPublicUser(updatedUser);
 }
 
-export async function deleteUser(id){
+export async function deleteUser(id, {actorId, ip} = {}){
     assertValidId(id);
 
     const deletedUser = await userRepository.deleteById(id);
     if(!deletedUser) throw new AppError("User not found!", 404);
+
+    await auditLogService.log("USER_DELETED", {actorId, targetId: id, ip});
 }
 
-export async function setUserBlockedStatus(id, isBlocked){
+export async function setUserBlockedStatus(id, isBlocked, {actorId, ip} = {}){
     assertValidId(id);
 
     const updatedUser = await userRepository.setBlockedStatus(id, isBlocked);
     if(!updatedUser) throw new AppError("User not found!", 404);
+
+    await auditLogService.log(isBlocked ? "USER_BLOCKED" : "USER_UNBLOCKED", {actorId, targetId: id, ip});
 
     return toPublicUser(updatedUser);
 }

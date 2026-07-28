@@ -1,11 +1,13 @@
 import crypto from "node:crypto";
-import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
 import * as userRepository from "../repositories/userRepository.js";
 import * as refreshTokenRepository from "../repositories/refreshTokenRepository.js";
 import * as mailService from "./mailService.js";
 import { AppError } from "../errors/AppError.js";
+import { comparePassword } from "../utils/passwordUtils.js";
+import { isValidEmail, isValidPassword } from "../utils/validators.js";
+import * as auditLogService from "./auditLogService.js";
 
 export const ACCESS_TOKEN_PURPOSE = "access";
 const EMAIL_VERIFICATION_PURPOSE = "email-verification";
@@ -39,6 +41,13 @@ export function generateVerificationToken(userId){
 }
 
 export async function register(data){
+    if(!isValidEmail(data.email)){
+        throw new AppError("Email adresa nije validna", 400);
+    }
+    if(!isValidPassword(data.password)){
+        throw new AppError("Šifra mora imati najmanje 8 karaktera", 400);
+    }
+
     const existingUser = await userRepository.findByEmail(data.email);
     if(existingUser){
         throw new AppError("Nalog sa ovim emailom već postoji", 409);
@@ -107,6 +116,10 @@ export async function resetPassword(token, newPassword){
         throw new AppError("Nevažeći link za reset šifre", 400);
     }
 
+    if(!isValidPassword(newPassword)){
+        throw new AppError("Šifra mora imati najmanje 8 karaktera", 400);
+    }
+
     const user = await userRepository.findById(decoded.id);
     if(!user) throw new AppError("User not found", 404);
 
@@ -116,12 +129,18 @@ export async function resetPassword(token, newPassword){
     await refreshTokenRepository.deleteAllForUser(user._id);
 }
 
-export async function login(email, password){
+export async function login(email, password, ip){
     const user = await userRepository.findByEmail(email);
-    if(!user) throw new AppError("Invalid email or password", 401);
+    if(!user){
+        await auditLogService.log("LOGIN_FAILED", {ip, metadata: {email}});
+        throw new AppError("Invalid email or password", 401);
+    }
 
-    const passwordMatches = await bcrypt.compare(password, user.password);
-    if(!passwordMatches) throw new AppError("Invalid email or password", 401);
+    const passwordMatches = await comparePassword(password, user.password);
+    if(!passwordMatches){
+        await auditLogService.log("LOGIN_FAILED", {targetId: user._id, ip, metadata: {email}});
+        throw new AppError("Invalid email or password", 401);
+    }
 
     if(!user.isVerified){
         throw new AppError("Please verify your email before logging in", 403);

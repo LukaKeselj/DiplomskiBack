@@ -1,5 +1,5 @@
 import mongoose  from "mongoose";
-import bcrypt from "bcryptjs";
+import { hashPassword } from "../utils/passwordUtils.js";
 
 const userSchema=new mongoose.Schema({
     name:{
@@ -58,14 +58,14 @@ const userSchema=new mongoose.Schema({
 
 userSchema.pre("save", async function(next){
     if(!this.isModified("password")) return next();
-    this.password = await bcrypt.hash(this.password, 10);
+    this.password = await hashPassword(this.password);
     next();
 });
 
 userSchema.pre("findOneAndUpdate", async function(next){
     const update = this.getUpdate();
     if(update.password){
-        update.password = await bcrypt.hash(update.password, 10);
+        update.password = await hashPassword(update.password);
     }
     next();
 });

@@ -20,7 +20,7 @@ export async function getAllUsers(req,res){
 
 export async function deleteUser(req,res){
     try{
-        await userService.deleteUser(req.params.id);
+        await userService.deleteUser(req.params.id, {actorId: req.userId, ip: req.ip});
         res.status(200).json({message:"User deleted successfully"});
     }catch(error){
         handleError(res, error, "deleteUser");
@@ -53,7 +53,7 @@ export async function getUser(req,res){
 export async function setUserBlockedStatus(req,res){
     try{
         const {isBlocked} = req.body;
-        const updatedUser = await userService.setUserBlockedStatus(req.params.id, isBlocked);
+        const updatedUser = await userService.setUserBlockedStatus(req.params.id, isBlocked, {actorId: req.userId, ip: req.ip});
         res.status(200).json(updatedUser);
     }catch(error){
         handleError(res, error, "setUserBlockedStatus");

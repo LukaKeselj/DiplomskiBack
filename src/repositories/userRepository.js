@@ -10,6 +10,7 @@ export function findById(id){
 }
 
 export function findByEmail(email){
+    if(typeof email !== "string") return null;
     return User.findOne({email});
 }
 
