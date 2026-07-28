@@ -1,32 +1,36 @@
 import User from "../models/User.js";
 
-export function findAll(excludeId){
-    const filter = excludeId ? {_id: {$ne: excludeId}} : {};
-    return User.find(filter).sort({createdAt:-1});
-}
+export function createUserRepository(){
+    function findAll(excludeId){
+        const filter = excludeId ? {_id: {$ne: excludeId}} : {};
+        return User.find(filter).sort({createdAt:-1});
+    }
 
-export function findById(id){
-    return User.findById(id);
-}
+    function findById(id){
+        return User.findById(id);
+    }
 
-export function findByEmail(email){
-    if(typeof email !== "string") return null;
-    return User.findOne({email});
-}
+    function findByEmail(email){
+        if(typeof email !== "string") return null;
+        return User.findOne({email});
+    }
 
-export function create(data){
-    const user = new User(data);
-    return user.save();
-}
+    function create(data){
+        const user = new User(data);
+        return user.save();
+    }
 
-export function updateById(id, data){
-    return User.findByIdAndUpdate(id, data, {new:true});
-}
+    function updateById(id, data){
+        return User.findByIdAndUpdate(id, data, {new:true});
+    }
 
-export function deleteById(id){
-    return User.findByIdAndDelete(id);
-}
+    function deleteById(id){
+        return User.findByIdAndDelete(id);
+    }
 
-export function setBlockedStatus(id, isBlocked){
-    return User.findByIdAndUpdate(id, {isBlocked}, {new:true});
+    function setBlockedStatus(id, isBlocked){
+        return User.findByIdAndUpdate(id, {isBlocked}, {new:true});
+    }
+
+    return { findAll, findById, findByEmail, create, updateById, deleteById, setBlockedStatus };
 }

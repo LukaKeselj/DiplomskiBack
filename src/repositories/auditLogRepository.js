@@ -1,5 +1,9 @@
 import AuditLog from "../models/AuditLog.js";
 
-export function create(data){
-    return AuditLog.create(data);
+export function createAuditLogRepository(){
+    function create(data){
+        return AuditLog.create(data);
+    }
+
+    return { create };
 }

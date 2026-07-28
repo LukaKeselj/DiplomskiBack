@@ -1,11 +1,13 @@
 import express from "express";
-import {
+import container from "../container.js";
+import { requireAuth } from "../middleware/authMiddleware.js";
+
+const {
     getNextDay,
     getSessions,
     completeDay,
     deleteSession,
-} from "../controllers/workoutSessionsController.js";
-import { requireAuth } from "../middleware/authMiddleware.js";
+} = container.cradle.workoutSessionsController;
 
 const router = express.Router();
 

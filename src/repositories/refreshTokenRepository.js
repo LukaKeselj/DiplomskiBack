@@ -7,26 +7,30 @@ function hashToken(rawToken){
     return crypto.createHash("sha256").update(rawToken).digest("hex");
 }
 
-export async function create(userId){
-    const rawToken = crypto.randomBytes(40).toString("hex");
+export function createRefreshTokenRepository(){
+    async function create(userId){
+        const rawToken = crypto.randomBytes(40).toString("hex");
 
-    await RefreshToken.create({
-        user: userId,
-        tokenHash: hashToken(rawToken),
-        expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
-    });
+        await RefreshToken.create({
+            user: userId,
+            tokenHash: hashToken(rawToken),
+            expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
+        });
 
-    return rawToken;
-}
+        return rawToken;
+    }
 
-export function findByRawToken(rawToken){
-    return RefreshToken.findOne({tokenHash: hashToken(rawToken)});
-}
+    function findByRawToken(rawToken){
+        return RefreshToken.findOne({tokenHash: hashToken(rawToken)});
+    }
 
-export function deleteByRawToken(rawToken){
-    return RefreshToken.deleteOne({tokenHash: hashToken(rawToken)});
-}
+    function deleteByRawToken(rawToken){
+        return RefreshToken.deleteOne({tokenHash: hashToken(rawToken)});
+    }
 
-export function deleteAllForUser(userId){
-    return RefreshToken.deleteMany({user: userId});
+    function deleteAllForUser(userId){
+        return RefreshToken.deleteMany({user: userId});
+    }
+
+    return { create, findByRawToken, deleteByRawToken, deleteAllForUser };
 }

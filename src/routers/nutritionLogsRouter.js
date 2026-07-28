@@ -1,13 +1,15 @@
 import express from "express";
-import {
+import container from "../container.js";
+import { requireAuth } from "../middleware/authMiddleware.js";
+
+const {
     getAllLogs,
     getDailySummary,
     getSummaryRange,
     createLog,
     updateLog,
     deleteLog,
-} from "../controllers/nutritionLogsController.js";
-import { requireAuth } from "../middleware/authMiddleware.js";
+} = container.cradle.nutritionLogsController;
 
 const router = express.Router();
 

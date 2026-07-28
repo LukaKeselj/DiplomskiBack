@@ -30,6 +30,7 @@
   "dependencies": {
     "@upstash/ratelimit": "^2.0.5",
     "@upstash/redis": "^1.34.9",
+    "awilix": "^13.0.5",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",

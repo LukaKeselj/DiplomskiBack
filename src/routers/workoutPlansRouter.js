@@ -1,5 +1,8 @@
 import express from "express";
-import {
+import container from "../container.js";
+import { requireAuth } from "../middleware/authMiddleware.js";
+
+const {
     getAllWorkoutPlans,
     getWorkoutPlan,
     createWorkoutPlan,
@@ -7,8 +10,7 @@ import {
     deleteWorkoutPlan,
     activateWorkoutPlan,
     getActiveWorkoutPlan,
-} from "../controllers/workoutPlansController.js";
-import { requireAuth } from "../middleware/authMiddleware.js";
+} = container.cradle.workoutPlansController;
 
 const router = express.Router();
 

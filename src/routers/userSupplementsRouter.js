@@ -1,12 +1,14 @@
 import express from "express";
-import {
+import container from "../container.js";
+import { requireAuth } from "../middleware/authMiddleware.js";
+
+const {
     getAllUserSupplements,
     getUserSupplement,
     createUserSupplement,
     updateUserSupplement,
     deleteUserSupplement,
-} from "../controllers/userSupplementsController.js";
-import { requireAuth } from "../middleware/authMiddleware.js";
+} = container.cradle.userSupplementsController;
 
 const router = express.Router();
 

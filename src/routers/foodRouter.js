@@ -1,6 +1,8 @@
 import express from "express";
-import { searchFood, getFood } from "../controllers/foodController.js";
+import container from "../container.js";
 import { requireAuth } from "../middleware/authMiddleware.js";
+
+const { searchFood, getFood } = container.cradle.foodController;
 
 const router = express.Router();
 

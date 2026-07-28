@@ -29,7 +29,7 @@ async function callFatSecret(params){
     return data;
 }
 
-export async function searchFoods(query){
+async function searchFoods(query){
     if(!query || !query.trim()){
         throw new AppError("Upit za pretragu je obavezan", 400);
     }
@@ -44,7 +44,7 @@ export async function searchFoods(query){
     }));
 }
 
-export async function getFoodDetails(foodId){
+async function getFoodDetails(foodId){
     if(!foodId){
         throw new AppError("ID namirnice je obavezan", 400);
     }
@@ -71,4 +71,8 @@ export async function getFoodDetails(foodId){
             fiber: Number(serving.fiber) || 0,
         })),
     };
+}
+
+export function createFatsecretService(){
+    return { searchFoods, getFoodDetails };
 }

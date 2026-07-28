@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import * as exerciseRepository from "../repositories/exerciseRepository.js";
 import { MUSCLE_GROUPS } from "../models/Exercise.js";
 import { AppError } from "../errors/AppError.js";
 
@@ -25,55 +24,59 @@ function assertValidMuscleGroup(muscleGroup){
     }
 }
 
-export async function getAllExercises(){
-    return exerciseRepository.findAll();
-}
-
-export async function getExerciseById(id){
-    assertValidId(id);
-
-    const exercise = await exerciseRepository.findById(id);
-    if(!exercise) throw new AppError("Exercise not found!", 404);
-
-    return exercise;
-}
-
-export async function createExercise(data){
-    const payload = pickAllowedFields(data);
-
-    if(!payload.name){
-        throw new AppError("Naziv vežbe je obavezan", 400);
+export function createExerciseService({ exerciseRepository }){
+    async function getAllExercises(){
+        return exerciseRepository.findAll();
     }
-    if(!payload.muscleGroup){
-        throw new AppError("Mišićna grupa je obavezna", 400);
+
+    async function getExerciseById(id){
+        assertValidId(id);
+
+        const exercise = await exerciseRepository.findById(id);
+        if(!exercise) throw new AppError("Exercise not found!", 404);
+
+        return exercise;
     }
-    assertValidMuscleGroup(payload.muscleGroup);
 
-    return exerciseRepository.create(payload);
-}
+    async function createExercise(data){
+        const payload = pickAllowedFields(data);
 
-export async function updateExercise(id, data){
-    assertValidId(id);
+        if(!payload.name){
+            throw new AppError("Naziv vežbe je obavezan", 400);
+        }
+        if(!payload.muscleGroup){
+            throw new AppError("Mišićna grupa je obavezna", 400);
+        }
+        assertValidMuscleGroup(payload.muscleGroup);
 
-    const payload = pickAllowedFields(data);
-
-    if("name" in payload && !payload.name){
-        throw new AppError("Naziv vežbe je obavezan", 400);
+        return exerciseRepository.create(payload);
     }
-    if("muscleGroup" in payload && !payload.muscleGroup){
-        throw new AppError("Mišićna grupa je obavezna", 400);
+
+    async function updateExercise(id, data){
+        assertValidId(id);
+
+        const payload = pickAllowedFields(data);
+
+        if("name" in payload && !payload.name){
+            throw new AppError("Naziv vežbe je obavezan", 400);
+        }
+        if("muscleGroup" in payload && !payload.muscleGroup){
+            throw new AppError("Mišićna grupa je obavezna", 400);
+        }
+        assertValidMuscleGroup(payload.muscleGroup);
+
+        const updatedExercise = await exerciseRepository.updateById(id, payload);
+        if(!updatedExercise) throw new AppError("Exercise not found!", 404);
+
+        return updatedExercise;
     }
-    assertValidMuscleGroup(payload.muscleGroup);
 
-    const updatedExercise = await exerciseRepository.updateById(id, payload);
-    if(!updatedExercise) throw new AppError("Exercise not found!", 404);
+    async function deleteExercise(id){
+        assertValidId(id);
 
-    return updatedExercise;
-}
+        const deletedExercise = await exerciseRepository.deleteById(id);
+        if(!deletedExercise) throw new AppError("Exercise not found!", 404);
+    }
 
-export async function deleteExercise(id){
-    assertValidId(id);
-
-    const deletedExercise = await exerciseRepository.deleteById(id);
-    if(!deletedExercise) throw new AppError("Exercise not found!", 404);
+    return { getAllExercises, getExerciseById, createExercise, updateExercise, deleteExercise };
 }

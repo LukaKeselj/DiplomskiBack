@@ -1,5 +1,9 @@
 import express from "express";
-import {
+import container from "../container.js";
+import { requireAuth } from "../middleware/authMiddleware.js";
+import { authRateLimiter, loginRateLimiter } from "../middleware/authRateLimiter.js";
+
+const {
     register,
     login,
     verifyEmail,
@@ -10,9 +14,7 @@ import {
     logout,
     me,
     refresh,
-} from "../controllers/authController.js";
-import { requireAuth } from "../middleware/authMiddleware.js";
-import { authRateLimiter, loginRateLimiter } from "../middleware/authRateLimiter.js";
+} = container.cradle.authController;
 
 const router = express.Router();
 

@@ -1,7 +1,4 @@
 import mongoose from "mongoose";
-import * as workoutPlanRepository from "../repositories/workoutPlanRepository.js";
-import * as exerciseRepository from "../repositories/exerciseRepository.js";
-import * as userRepository from "../repositories/userRepository.js";
 import { AppError } from "../errors/AppError.js";
 
 function toPublicUser(userDoc){
@@ -58,108 +55,120 @@ function validateDays(days){
     });
 }
 
-async function assertReferencedExercisesExist(days){
-    const exerciseIds = [...new Set(
-        days.flatMap((day) => day.exercises.map((entry) => entry.exercise.toString()))
-    )];
+export function createWorkoutPlanService({ workoutPlanRepository, exerciseRepository, userRepository }){
+    async function assertReferencedExercisesExist(days){
+        const exerciseIds = [...new Set(
+            days.flatMap((day) => day.exercises.map((entry) => entry.exercise.toString()))
+        )];
 
-    if(exerciseIds.length === 0) return;
+        if(exerciseIds.length === 0) return;
 
-    const count = await exerciseRepository.countByIds(exerciseIds);
-    if(count !== exerciseIds.length){
-        throw new AppError("Jedna ili više navedenih vežbi ne postoji", 400);
-    }
-}
-
-export async function getAllWorkoutPlans(userId){
-    return workoutPlanRepository.findAllByUser(userId);
-}
-
-export async function getWorkoutPlanById(id, requesterId, requesterRole){
-    assertValidId(id);
-
-    const plan = await workoutPlanRepository.findById(id);
-    if(!plan) throw new AppError("Plan nije pronađen", 404);
-
-    assertOwnerOrAdmin(plan, requesterId, requesterRole);
-
-    return plan;
-}
-
-export async function createWorkoutPlan(userId, {name, days}){
-    if(!name){
-        throw new AppError("Naziv plana je obavezan", 400);
+        const count = await exerciseRepository.countByIds(exerciseIds);
+        if(count !== exerciseIds.length){
+            throw new AppError("Jedna ili više navedenih vežbi ne postoji", 400);
+        }
     }
 
-    const validatedDays = validateDays(days);
-    await assertReferencedExercisesExist(validatedDays);
+    async function getAllWorkoutPlans(userId){
+        return workoutPlanRepository.findAllByUser(userId);
+    }
 
-    return workoutPlanRepository.create({
-        user: userId,
-        name,
-        days: validatedDays,
-    });
-}
+    async function getWorkoutPlanById(id, requesterId, requesterRole){
+        assertValidId(id);
 
-export async function updateWorkoutPlan(id, requesterId, requesterRole, {name, days}){
-    assertValidId(id);
+        const plan = await workoutPlanRepository.findById(id);
+        if(!plan) throw new AppError("Plan nije pronađen", 404);
 
-    const plan = await workoutPlanRepository.findById(id);
-    if(!plan) throw new AppError("Plan nije pronađen", 404);
+        assertOwnerOrAdmin(plan, requesterId, requesterRole);
 
-    assertOwnerOrAdmin(plan, requesterId, requesterRole);
+        return plan;
+    }
 
-    const updateData = {};
-
-    if(name !== undefined){
+    async function createWorkoutPlan(userId, {name, days}){
         if(!name){
             throw new AppError("Naziv plana je obavezan", 400);
         }
-        updateData.name = name;
-    }
 
-    if(days !== undefined){
         const validatedDays = validateDays(days);
         await assertReferencedExercisesExist(validatedDays);
-        updateData.days = validatedDays;
+
+        return workoutPlanRepository.create({
+            user: userId,
+            name,
+            days: validatedDays,
+        });
     }
 
-    const updatedPlan = await workoutPlanRepository.updateById(id, updateData);
-    if(!updatedPlan) throw new AppError("Plan nije pronađen", 404);
+    async function updateWorkoutPlan(id, requesterId, requesterRole, {name, days}){
+        assertValidId(id);
 
-    return updatedPlan;
-}
+        const plan = await workoutPlanRepository.findById(id);
+        if(!plan) throw new AppError("Plan nije pronađen", 404);
 
-export async function deleteWorkoutPlan(id, requesterId, requesterRole){
-    assertValidId(id);
+        assertOwnerOrAdmin(plan, requesterId, requesterRole);
 
-    const plan = await workoutPlanRepository.findById(id);
-    if(!plan) throw new AppError("Plan nije pronađen", 404);
+        const updateData = {};
 
-    assertOwnerOrAdmin(plan, requesterId, requesterRole);
+        if(name !== undefined){
+            if(!name){
+                throw new AppError("Naziv plana je obavezan", 400);
+            }
+            updateData.name = name;
+        }
 
-    await workoutPlanRepository.deleteById(id);
-}
+        if(days !== undefined){
+            const validatedDays = validateDays(days);
+            await assertReferencedExercisesExist(validatedDays);
+            updateData.days = validatedDays;
+        }
 
-export async function activatePlan(id, requesterId, requesterRole){
-    assertValidId(id);
+        const updatedPlan = await workoutPlanRepository.updateById(id, updateData);
+        if(!updatedPlan) throw new AppError("Plan nije pronađen", 404);
 
-    const plan = await workoutPlanRepository.findById(id);
-    if(!plan) throw new AppError("Plan nije pronađen", 404);
+        return updatedPlan;
+    }
 
-    assertOwnerOrAdmin(plan, requesterId, requesterRole);
+    async function deleteWorkoutPlan(id, requesterId, requesterRole){
+        assertValidId(id);
 
-    const updatedUser = await userRepository.updateById(requesterId, {activeWorkoutPlan: plan._id});
-    if(!updatedUser) throw new AppError("User not found!", 404);
+        const plan = await workoutPlanRepository.findById(id);
+        if(!plan) throw new AppError("Plan nije pronađen", 404);
 
-    return toPublicUser(updatedUser);
-}
+        assertOwnerOrAdmin(plan, requesterId, requesterRole);
 
-export async function getActivePlan(requesterId){
-    const user = await userRepository.findById(requesterId);
-    if(!user) throw new AppError("User not found!", 404);
+        await workoutPlanRepository.deleteById(id);
+    }
 
-    if(!user.activeWorkoutPlan) return null;
+    async function activatePlan(id, requesterId, requesterRole){
+        assertValidId(id);
 
-    return workoutPlanRepository.findById(user.activeWorkoutPlan);
+        const plan = await workoutPlanRepository.findById(id);
+        if(!plan) throw new AppError("Plan nije pronađen", 404);
+
+        assertOwnerOrAdmin(plan, requesterId, requesterRole);
+
+        const updatedUser = await userRepository.updateById(requesterId, {activeWorkoutPlan: plan._id});
+        if(!updatedUser) throw new AppError("User not found!", 404);
+
+        return toPublicUser(updatedUser);
+    }
+
+    async function getActivePlan(requesterId){
+        const user = await userRepository.findById(requesterId);
+        if(!user) throw new AppError("User not found!", 404);
+
+        if(!user.activeWorkoutPlan) return null;
+
+        return workoutPlanRepository.findById(user.activeWorkoutPlan);
+    }
+
+    return {
+        getAllWorkoutPlans,
+        getWorkoutPlanById,
+        createWorkoutPlan,
+        updateWorkoutPlan,
+        deleteWorkoutPlan,
+        activatePlan,
+        getActivePlan,
+    };
 }

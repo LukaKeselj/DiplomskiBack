@@ -102,7 +102,7 @@ function buildVerificationEmailHtml(verificationUrl){
 </html>`;
 }
 
-export async function sendVerificationEmail(to, verificationUrl){
+async function sendVerificationEmail(to, verificationUrl){
     await transport.sendMail({
         from: `"Treniraj" <${process.env.GMAIL_USER}>`,
         to,
@@ -203,7 +203,7 @@ function buildPasswordResetEmailHtml(resetUrl){
 </html>`;
 }
 
-export async function sendPasswordResetEmail(to, resetUrl){
+async function sendPasswordResetEmail(to, resetUrl){
     await transport.sendMail({
         from: `"Treniraj" <${process.env.GMAIL_USER}>`,
         to,
@@ -211,4 +211,8 @@ export async function sendPasswordResetEmail(to, resetUrl){
         text: `Zatražio/la si reset šifre. Otvori ovaj link da postaviš novu šifru: ${resetUrl}`,
         html: buildPasswordResetEmailHtml(resetUrl),
     });
+}
+
+export function createMailService(){
+    return { sendVerificationEmail, sendPasswordResetEmail };
 }
