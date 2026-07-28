@@ -1,7 +1,14 @@
 import mongoose from "mongoose";
 import * as workoutPlanRepository from "../repositories/workoutPlanRepository.js";
 import * as exerciseRepository from "../repositories/exerciseRepository.js";
+import * as userRepository from "../repositories/userRepository.js";
 import { AppError } from "../errors/AppError.js";
+
+function toPublicUser(userDoc){
+    const user = userDoc.toObject();
+    delete user.password;
+    return user;
+}
 
 function assertValidExerciseId(id){
     if(!mongoose.Types.ObjectId.isValid(id)){
@@ -132,4 +139,27 @@ export async function deleteWorkoutPlan(id, requesterId, requesterRole){
     assertOwnerOrAdmin(plan, requesterId, requesterRole);
 
     await workoutPlanRepository.deleteById(id);
+}
+
+export async function activatePlan(id, requesterId, requesterRole){
+    assertValidId(id);
+
+    const plan = await workoutPlanRepository.findById(id);
+    if(!plan) throw new AppError("Plan nije pronađen", 404);
+
+    assertOwnerOrAdmin(plan, requesterId, requesterRole);
+
+    const updatedUser = await userRepository.updateById(requesterId, {activeWorkoutPlan: plan._id});
+    if(!updatedUser) throw new AppError("User not found!", 404);
+
+    return toPublicUser(updatedUser);
+}
+
+export async function getActivePlan(requesterId){
+    const user = await userRepository.findById(requesterId);
+    if(!user) throw new AppError("User not found!", 404);
+
+    if(!user.activeWorkoutPlan) return null;
+
+    return workoutPlanRepository.findById(user.activeWorkoutPlan);
 }

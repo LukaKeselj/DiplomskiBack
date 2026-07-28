@@ -10,6 +10,9 @@ import userSupplementsRouter from "./routers/userSupplementsRouter.js";
 import supplementLogsRouter from "./routers/supplementLogsRouter.js";
 import foodRouter from "./routers/foodRouter.js";
 import nutritionLogsRouter from "./routers/nutritionLogsRouter.js";
+import weightLogsRouter from "./routers/weightLogsRouter.js";
+import workoutLogsRouter from "./routers/workoutLogsRouter.js";
+import workoutSessionsRouter from "./routers/workoutSessionsRouter.js";
 import { connectDB } from "./config/db.js";
 import rateLimiter from "./middleware/rateLimiter.js";
 
@@ -34,6 +37,9 @@ app.use("/api/user-supplements",userSupplementsRouter);
 app.use("/api/supplement-logs",supplementLogsRouter);
 app.use("/api/foods",foodRouter);
 app.use("/api/nutrition-logs",nutritionLogsRouter);
+app.use("/api/weight-logs",weightLogsRouter);
+app.use("/api/workout-logs",workoutLogsRouter);
+app.use("/api/workout-sessions",workoutSessionsRouter);
 
 connectDB().then(()=>{
     app.listen(PORT,()=>{

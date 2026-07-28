@@ -47,6 +47,11 @@ const userSchema=new mongoose.Schema({
         enum: ["user","admin"],
         default: "user",
     },
+    activeWorkoutPlan:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "WorkoutPlan",
+        default: null,
+    },
 },
 {timestamps:true}
 );

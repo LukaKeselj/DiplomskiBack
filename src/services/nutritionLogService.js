@@ -30,6 +30,13 @@ function assertMacros({calories, protein, fat, carbs}){
     }
 }
 
+function assertNotFutureDate(date){
+    const today = normalizeDate();
+    if(date > today){
+        throw new AppError("Ne možeš unositi ishranu za dan koji još nije došao", 400);
+    }
+}
+
 export async function getAllLogs(userId, {date} = {}){
     const filter = {};
     if(date !== undefined){
@@ -89,9 +96,12 @@ export async function createLog(userId, {date, foodName, foodId, calories, prote
     }
     assertMacros({calories, protein, fat, carbs});
 
+    const normalizedDate = normalizeDate(date);
+    assertNotFutureDate(normalizedDate);
+
     return nutritionLogRepository.create({
         user: userId,
-        date: normalizeDate(date),
+        date: normalizedDate,
         foodName,
         foodId,
         calories,
@@ -116,7 +126,11 @@ export async function updateLog(id, requesterId, requesterRole, data){
         if(!data.foodName) throw new AppError("Naziv namirnice je obavezan", 400);
         updateData.foodName = data.foodName;
     }
-    if(data.date !== undefined) updateData.date = normalizeDate(data.date);
+    if(data.date !== undefined){
+        const normalizedDate = normalizeDate(data.date);
+        assertNotFutureDate(normalizedDate);
+        updateData.date = normalizedDate;
+    }
     if(data.foodId !== undefined) updateData.foodId = data.foodId;
     if(data.calories !== undefined) updateData.calories = data.calories;
     if(data.protein !== undefined) updateData.protein = data.protein;

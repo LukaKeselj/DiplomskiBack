@@ -60,3 +60,21 @@ export async function deleteWorkoutPlan(req,res){
         handleError(res, error, "deleteWorkoutPlan");
     }
 }
+
+export async function activateWorkoutPlan(req,res){
+    try{
+        const updatedUser = await workoutPlanService.activatePlan(req.params.id, req.userId, req.userRole);
+        res.status(200).json(updatedUser);
+    }catch(error){
+        handleError(res, error, "activateWorkoutPlan");
+    }
+}
+
+export async function getActiveWorkoutPlan(req,res){
+    try{
+        const plan = await workoutPlanService.getActivePlan(req.userId);
+        res.status(200).json(plan);
+    }catch(error){
+        handleError(res, error, "getActiveWorkoutPlan");
+    }
+}
