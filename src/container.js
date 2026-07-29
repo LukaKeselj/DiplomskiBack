@@ -5,6 +5,7 @@ import { createRefreshTokenRepository } from "./repositories/refreshTokenReposit
 import { createAuditLogRepository } from "./repositories/auditLogRepository.js";
 import { createExerciseRepository } from "./repositories/exerciseRepository.js";
 import { createNutritionLogRepository } from "./repositories/nutritionLogRepository.js";
+import { createNutritionPlanRepository } from "./repositories/nutritionPlanRepository.js";
 import { createSupplementLogRepository } from "./repositories/supplementLogRepository.js";
 import { createSupplementRepository } from "./repositories/supplementRepository.js";
 import { createUserSupplementRepository } from "./repositories/userSupplementRepository.js";
@@ -20,6 +21,7 @@ import { createUserService } from "./services/userService.js";
 import { createExerciseService } from "./services/exerciseService.js";
 import { createFatsecretService } from "./services/fatsecretService.js";
 import { createNutritionLogService } from "./services/nutritionLogService.js";
+import { createNutritionPlanService } from "./services/nutritionPlanService.js";
 import { createSupplementLogService } from "./services/supplementLogService.js";
 import { createSupplementService } from "./services/supplementService.js";
 import { createUserSupplementService } from "./services/userSupplementService.js";
@@ -33,6 +35,7 @@ import { createUsersController } from "./controllers/usersController.js";
 import { createExercisesController } from "./controllers/exercisesController.js";
 import { createFoodController } from "./controllers/foodController.js";
 import { createNutritionLogsController } from "./controllers/nutritionLogsController.js";
+import { createNutritionPlansController } from "./controllers/nutritionPlansController.js";
 import { createSupplementLogsController } from "./controllers/supplementLogsController.js";
 import { createSupplementsController } from "./controllers/supplementsController.js";
 import { createUserSupplementsController } from "./controllers/userSupplementsController.js";
@@ -52,6 +55,7 @@ container.register({
     auditLogRepository: asFunction(createAuditLogRepository).singleton(),
     exerciseRepository: asFunction(createExerciseRepository).singleton(),
     nutritionLogRepository: asFunction(createNutritionLogRepository).singleton(),
+    nutritionPlanRepository: asFunction(createNutritionPlanRepository).singleton(),
     supplementLogRepository: asFunction(createSupplementLogRepository).singleton(),
     supplementRepository: asFunction(createSupplementRepository).singleton(),
     userSupplementRepository: asFunction(createUserSupplementRepository).singleton(),
@@ -68,6 +72,7 @@ container.register({
     exerciseService: asFunction(createExerciseService).singleton(),
     fatsecretService: asFunction(createFatsecretService).singleton(),
     nutritionLogService: asFunction(createNutritionLogService).singleton(),
+    nutritionPlanService: asFunction(createNutritionPlanService).singleton(),
     supplementLogService: asFunction(createSupplementLogService).singleton(),
     supplementService: asFunction(createSupplementService).singleton(),
     userSupplementService: asFunction(createUserSupplementService).singleton(),
@@ -82,6 +87,7 @@ container.register({
     exercisesController: asFunction(createExercisesController).singleton(),
     foodController: asFunction(createFoodController).singleton(),
     nutritionLogsController: asFunction(createNutritionLogsController).singleton(),
+    nutritionPlansController: asFunction(createNutritionPlansController).singleton(),
     supplementLogsController: asFunction(createSupplementLogsController).singleton(),
     supplementsController: asFunction(createSupplementsController).singleton(),
     userSupplementsController: asFunction(createUserSupplementsController).singleton(),

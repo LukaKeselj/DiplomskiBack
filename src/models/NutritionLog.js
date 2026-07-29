@@ -39,6 +39,10 @@ const nutritionLogSchema = new mongoose.Schema(
             type: Number,
             default: 0,
         },
+        nutritionPlanItem: {
+            type: mongoose.Schema.Types.ObjectId,
+            default: null,
+        },
     },
     {timestamps: true}
 );

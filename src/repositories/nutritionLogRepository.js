@@ -10,6 +10,10 @@ export function createNutritionLogRepository(){
         return NutritionLog.findById(id);
     }
 
+    function findOneByUserItemAndDate(userId, nutritionPlanItem, date){
+        return NutritionLog.findOne({user: userId, nutritionPlanItem, date});
+    }
+
     function create(data){
         const log = new NutritionLog(data);
         return log.save();
@@ -61,5 +65,5 @@ export function createNutritionLogRepository(){
         ]);
     }
 
-    return { findAllByUser, findById, create, updateById, deleteById, sumByUserAndDate, sumByUserAndDateRange };
+    return { findAllByUser, findById, findOneByUserItemAndDate, create, updateById, deleteById, sumByUserAndDate, sumByUserAndDateRange };
 }

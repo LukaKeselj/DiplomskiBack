@@ -52,6 +52,11 @@ const userSchema=new mongoose.Schema({
         ref: "WorkoutPlan",
         default: null,
     },
+    activeNutritionPlan:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "NutritionPlan",
+        default: null,
+    },
 },
 {timestamps:true}
 );

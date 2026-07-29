@@ -14,7 +14,7 @@ function assertOwnerOrAdmin(log, requesterId, requesterRole){
     }
 }
 
-function normalizeDate(date){
+export function normalizeDate(date){
     const parsed = date ? new Date(date) : new Date();
     if(Number.isNaN(parsed.getTime())){
         throw new AppError("Nevažeći datum", 400);
