@@ -58,15 +58,12 @@ function validateDays(days){
     if(!Array.isArray(days)) return [];
 
     return days.map((day) => {
-        if(day.dayOfWeek === undefined || day.dayOfWeek === null){
-            throw new AppError("Dan u nedelji je obavezan", 400);
-        }
-        if(!Number.isInteger(day.dayOfWeek) || day.dayOfWeek < 0 || day.dayOfWeek > 6){
-            throw new AppError("Dan u nedelji mora biti broj od 0 do 6", 400);
+        if(!day.dayName){
+            throw new AppError("Naziv dana je obavezan", 400);
         }
 
         return {
-            dayOfWeek: day.dayOfWeek,
+            dayName: day.dayName,
             items: validateItems(day.items),
         };
     });
@@ -156,7 +153,10 @@ export function createNutritionPlanService({ nutritionPlanRepository, nutritionL
 
         assertOwnerOrAdmin(plan, requesterId, requesterRole);
 
-        const updatedUser = await userRepository.updateById(requesterId, {activeNutritionPlan: plan._id});
+        const updatedUser = await userRepository.updateById(requesterId, {
+            activeNutritionPlan: plan._id,
+            activeNutritionPlanStartDate: normalizeDate(new Date()),
+        });
         if(!updatedUser) throw new AppError("User not found!", 404);
 
         return toPublicUser(updatedUser);

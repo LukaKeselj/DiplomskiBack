@@ -57,6 +57,10 @@ const userSchema=new mongoose.Schema({
         ref: "NutritionPlan",
         default: null,
     },
+    activeNutritionPlanStartDate:{
+        type: Date,
+        default: null,
+    },
 },
 {timestamps:true}
 );

@@ -32,11 +32,10 @@ const nutritionPlanItemSchema = new mongoose.Schema({
 });
 
 const nutritionPlanDaySchema = new mongoose.Schema({
-    dayOfWeek: {
-        type: Number,
+    dayName: {
+        type: String,
         required: true,
-        min: 0,
-        max: 6,
+        trim: true,
     },
     items: [nutritionPlanItemSchema],
 });

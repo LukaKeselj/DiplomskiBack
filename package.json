@@ -13,6 +13,7 @@
     "seed:exercises": "node src/scripts/seedExercises.js",
     "seed:supplements": "node src/scripts/seedSupplements.js",
     "seed:workout-plans": "node src/scripts/seedWorkoutPlans.js",
+    "seed:nutrition-plans": "node src/scripts/seedNutritionPlans.js",
     "seed": "npm run seed:exercises && npm run seed:supplements"
   },
   "repository": {
