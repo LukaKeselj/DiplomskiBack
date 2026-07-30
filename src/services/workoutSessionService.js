@@ -23,6 +23,13 @@ function normalizeDate(date){
     return parsed;
 }
 
+function assertNotFutureDate(date){
+    const today = normalizeDate();
+    if(date > today){
+        throw new AppError("Ne možeš označiti trening za dan koji još nije došao", 400);
+    }
+}
+
 function findDayIndex(plan, dayId){
     const index = plan.days.findIndex((day) => day._id.toString() === dayId);
     if(index === -1){
@@ -85,11 +92,14 @@ export function createWorkoutSessionService({ workoutSessionRepository, workoutP
             throw new AppError("Prvo moraš da završiš prethodni dan u nizu", 400);
         }
 
+        const normalizedDate = normalizeDate(date);
+        assertNotFutureDate(normalizedDate);
+
         return workoutSessionRepository.upsertSession({
             user: userId,
             workoutPlan: plan._id,
             day,
-            date: normalizeDate(date),
+            date: normalizedDate,
         });
     }
 

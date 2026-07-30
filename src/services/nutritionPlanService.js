@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { AppError } from "../errors/AppError.js";
-import { normalizeDate } from "./nutritionLogService.js";
+import { normalizeDate, assertNotFutureDate } from "./nutritionLogService.js";
 
 function toPublicUser(userDoc){
     const user = userDoc.toObject();
@@ -184,6 +184,7 @@ export function createNutritionPlanService({ nutritionPlanRepository, nutritionL
         if(!item) throw new AppError("Stavka nije pronađena u planu", 404);
 
         const normalizedDate = normalizeDate(date);
+        assertNotFutureDate(normalizedDate);
 
         const existingLog = await nutritionLogRepository.findOneByUserItemAndDate(requesterId, itemId, normalizedDate);
         if(existingLog){

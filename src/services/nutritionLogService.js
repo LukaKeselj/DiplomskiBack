@@ -29,7 +29,7 @@ function assertMacros({calories, protein, fat, carbs}){
     }
 }
 
-function assertNotFutureDate(date){
+export function assertNotFutureDate(date){
     const today = normalizeDate();
     if(date > today){
         throw new AppError("Ne možeš unositi ishranu za dan koji još nije došao", 400);

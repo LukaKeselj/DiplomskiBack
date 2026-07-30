@@ -16,6 +16,13 @@ function normalizeDate(date){
     return parsed;
 }
 
+function assertNotFutureDate(date){
+    const today = normalizeDate();
+    if(date > today){
+        throw new AppError("Ne možeš označiti suplement za dan koji još nije došao", 400);
+    }
+}
+
 export function createSupplementLogService({ supplementLogRepository, userSupplementRepository }){
     async function assertOwnsUserSupplement(supplementId, requesterId){
         assertValidId(supplementId);
@@ -50,10 +57,13 @@ export function createSupplementLogService({ supplementLogRepository, userSupple
 
         await assertOwnsUserSupplement(supplement, userId);
 
+        const normalizedDate = normalizeDate(date);
+        assertNotFutureDate(normalizedDate);
+
         return supplementLogRepository.upsertLog({
             user: userId,
             supplement,
-            date: normalizeDate(date),
+            date: normalizedDate,
             taken: taken ?? true,
         });
     }
