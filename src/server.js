@@ -15,6 +15,7 @@ import nutritionPlansRouter from "./routers/nutritionPlansRouter.js";
 import weightLogsRouter from "./routers/weightLogsRouter.js";
 import workoutLogsRouter from "./routers/workoutLogsRouter.js";
 import workoutSessionsRouter from "./routers/workoutSessionsRouter.js";
+import fitnessScoreRouter from "./routers/fitnessScoreRouter.js";
 import { connectDB } from "./config/db.js";
 import rateLimiter from "./middleware/rateLimiter.js";
 
@@ -45,6 +46,7 @@ app.use("/api/nutrition-plans",nutritionPlansRouter);
 app.use("/api/weight-logs",weightLogsRouter);
 app.use("/api/workout-logs",workoutLogsRouter);
 app.use("/api/workout-sessions",workoutSessionsRouter);
+app.use("/api/fitness-score",fitnessScoreRouter);
 
 connectDB().then(()=>{
     app.listen(PORT,()=>{

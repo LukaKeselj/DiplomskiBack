@@ -20,6 +20,11 @@ const workoutSessionSchema = new mongoose.Schema(
             type: Date,
             required: true,
         },
+        status: {
+            type: String,
+            enum: ["completed", "skipped"],
+            default: "completed",
+        },
     },
     {timestamps: true}
 );

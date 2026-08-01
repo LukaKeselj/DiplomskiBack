@@ -27,9 +27,6 @@ const userSchema=new mongoose.Schema({
         type: Number,
         required: true,
     },
-    weight:{
-        type: Number,
-    },
     profileImage:{
         type: String,
         default: "",
@@ -50,6 +47,10 @@ const userSchema=new mongoose.Schema({
     activeWorkoutPlan:{
         type: mongoose.Schema.Types.ObjectId,
         ref: "WorkoutPlan",
+        default: null,
+    },
+    activeWorkoutPlanStartDate:{
+        type: Date,
         default: null,
     },
     activeNutritionPlan:{

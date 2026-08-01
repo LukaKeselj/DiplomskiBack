@@ -26,6 +26,12 @@ function assertOwnerOrAdmin(plan, requesterId, requesterRole){
     }
 }
 
+function normalizeDate(date){
+    const parsed = date ? new Date(date) : new Date();
+    parsed.setUTCHours(0, 0, 0, 0);
+    return parsed;
+}
+
 function validateDays(days){
     if(!Array.isArray(days)) return [];
 
@@ -147,7 +153,10 @@ export function createWorkoutPlanService({ workoutPlanRepository, exerciseReposi
 
         assertOwnerOrAdmin(plan, requesterId, requesterRole);
 
-        const updatedUser = await userRepository.updateById(requesterId, {activeWorkoutPlan: plan._id});
+        const updatedUser = await userRepository.updateById(requesterId, {
+            activeWorkoutPlan: plan._id,
+            activeWorkoutPlanStartDate: normalizeDate(),
+        });
         if(!updatedUser) throw new AppError("User not found!", 404);
 
         return toPublicUser(updatedUser);

@@ -21,13 +21,13 @@ export function createSupplementService({ supplementRepository }){
         return supplement;
     }
 
-    async function createSupplement({name, imageUrl}){
+    async function createSupplement({name, imageUrl, description}){
         if(!name){
             throw new AppError("Naziv suplementa je obavezan", 400);
         }
 
         try{
-            return await supplementRepository.create({name, imageUrl});
+            return await supplementRepository.create({name, imageUrl, description});
         }catch(error){
             if(error.code === 11000){
                 throw new AppError("Suplement sa ovim nazivom već postoji", 409);
@@ -36,7 +36,7 @@ export function createSupplementService({ supplementRepository }){
         }
     }
 
-    async function updateSupplement(id, {name, imageUrl}){
+    async function updateSupplement(id, {name, imageUrl, description}){
         assertValidId(id);
 
         if(name !== undefined && !name){
@@ -46,6 +46,7 @@ export function createSupplementService({ supplementRepository }){
         const updateData = {};
         if(name !== undefined) updateData.name = name;
         if(imageUrl !== undefined) updateData.imageUrl = imageUrl;
+        if(description !== undefined) updateData.description = description;
 
         try{
             const updatedSupplement = await supplementRepository.updateById(id, updateData);

@@ -20,6 +20,7 @@ import { createAuthService } from "./services/authService.js";
 import { createUserService } from "./services/userService.js";
 import { createExerciseService } from "./services/exerciseService.js";
 import { createFatsecretService } from "./services/fatsecretService.js";
+import { createFitnessScoreService } from "./services/fitnessScoreService.js";
 import { createNutritionLogService } from "./services/nutritionLogService.js";
 import { createNutritionPlanService } from "./services/nutritionPlanService.js";
 import { createSupplementLogService } from "./services/supplementLogService.js";
@@ -33,6 +34,7 @@ import { createWorkoutSessionService } from "./services/workoutSessionService.js
 import { createAuthController } from "./controllers/authController.js";
 import { createUsersController } from "./controllers/usersController.js";
 import { createExercisesController } from "./controllers/exercisesController.js";
+import { createFitnessScoreController } from "./controllers/fitnessScoreController.js";
 import { createFoodController } from "./controllers/foodController.js";
 import { createNutritionLogsController } from "./controllers/nutritionLogsController.js";
 import { createNutritionPlansController } from "./controllers/nutritionPlansController.js";
@@ -71,6 +73,7 @@ container.register({
     userService: asFunction(createUserService).singleton(),
     exerciseService: asFunction(createExerciseService).singleton(),
     fatsecretService: asFunction(createFatsecretService).singleton(),
+    fitnessScoreService: asFunction(createFitnessScoreService).singleton(),
     nutritionLogService: asFunction(createNutritionLogService).singleton(),
     nutritionPlanService: asFunction(createNutritionPlanService).singleton(),
     supplementLogService: asFunction(createSupplementLogService).singleton(),
@@ -85,6 +88,7 @@ container.register({
     authController: asFunction(createAuthController).singleton(),
     usersController: asFunction(createUsersController).singleton(),
     exercisesController: asFunction(createExercisesController).singleton(),
+    fitnessScoreController: asFunction(createFitnessScoreController).singleton(),
     foodController: asFunction(createFoodController).singleton(),
     nutritionLogsController: asFunction(createNutritionLogsController).singleton(),
     nutritionPlansController: asFunction(createNutritionPlansController).singleton(),

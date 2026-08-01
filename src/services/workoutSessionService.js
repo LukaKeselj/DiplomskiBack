@@ -14,7 +14,7 @@ function assertOwnerOrAdmin(plan, requesterId, requesterRole){
     }
 }
 
-function normalizeDate(date){
+export function normalizeDate(date){
     const parsed = date ? new Date(date) : new Date();
     if(Number.isNaN(parsed.getTime())){
         throw new AppError("Nevažeći datum", 400);
@@ -30,15 +30,36 @@ function assertNotFutureDate(date){
     }
 }
 
-function findDayIndex(plan, dayId){
-    const index = plan.days.findIndex((day) => day._id.toString() === dayId);
-    if(index === -1){
-        throw new AppError("Dan ne postoji u ovom planu", 400);
+const WEEK_LENGTH = 7;
+
+function buildTrainingSlotMap(trainingDaysCount){
+    const slots = Array(WEEK_LENGTH).fill(null);
+    for(let i = 0; i < trainingDaysCount; i++){
+        const slot = Math.floor((i * WEEK_LENGTH) / trainingDaysCount);
+        slots[slot] = i;
     }
-    return index;
+    return slots;
 }
 
-export function createWorkoutSessionService({ workoutSessionRepository, workoutPlanRepository }){
+export function getScheduledDay(plan, startDate, targetDate){
+    if(plan.days.length === 0 || !startDate){
+        return {day: null, index: null, isRestDay: null};
+    }
+
+    const diffDays = Math.round((targetDate - normalizeDate(startDate)) / (1000 * 60 * 60 * 24));
+    const cycleIndex = ((diffDays % WEEK_LENGTH) + WEEK_LENGTH) % WEEK_LENGTH;
+
+    const slots = buildTrainingSlotMap(plan.days.length);
+    const trainingIndex = slots[cycleIndex];
+
+    if(trainingIndex === null){
+        return {day: null, index: null, isRestDay: true};
+    }
+
+    return {day: plan.days[trainingIndex], index: trainingIndex, isRestDay: false};
+}
+
+export function createWorkoutSessionService({ workoutSessionRepository, workoutPlanRepository, userRepository }){
     async function loadOwnedPlan(workoutPlanId, requesterId, requesterRole){
         assertValidId(workoutPlanId);
 
@@ -50,27 +71,18 @@ export function createWorkoutSessionService({ workoutSessionRepository, workoutP
         return plan;
     }
 
-    async function computeExpectedIndex(userId, plan){
-        if(plan.days.length === 0) return null;
-
-        const lastSession = await workoutSessionRepository.findLastByUserAndPlan(userId, plan._id);
-        if(!lastSession) return 0;
-
-        const lastIndex = plan.days.findIndex((day) => day._id.toString() === lastSession.day.toString());
-        if(lastIndex === -1) return 0;
-
-        return (lastIndex + 1) % plan.days.length;
-    }
-
-    async function getNextDay(userId, workoutPlanId, requesterRole){
-        const plan = await loadOwnedPlan(workoutPlanId, userId, requesterRole);
-
-        const expectedIndex = await computeExpectedIndex(userId, plan);
-        if(expectedIndex === null){
-            return {day: null, index: null};
+    async function loadActivePlanSchedule(userId, plan, date){
+        const user = await userRepository.findById(userId);
+        if(!user?.activeWorkoutPlan || user.activeWorkoutPlan.toString() !== plan._id.toString()){
+            return {day: null, index: null, isRestDay: null};
         }
 
-        return {day: plan.days[expectedIndex], index: expectedIndex};
+        return getScheduledDay(plan, user.activeWorkoutPlanStartDate, normalizeDate(date));
+    }
+
+    async function getNextDay(userId, workoutPlanId, requesterRole, date){
+        const plan = await loadOwnedPlan(workoutPlanId, userId, requesterRole);
+        return loadActivePlanSchedule(userId, plan, date);
     }
 
     async function getSessions(userId, workoutPlanId, requesterRole){
@@ -85,21 +97,43 @@ export function createWorkoutSessionService({ workoutSessionRepository, workoutP
             throw new AppError("Nevažeći ID dana", 400);
         }
 
-        const dayIndex = findDayIndex(plan, day);
-        const expectedIndex = await computeExpectedIndex(userId, plan);
-
-        if(dayIndex !== expectedIndex){
-            throw new AppError("Prvo moraš da završiš prethodni dan u nizu", 400);
-        }
-
         const normalizedDate = normalizeDate(date);
         assertNotFutureDate(normalizedDate);
+
+        const scheduled = await loadActivePlanSchedule(userId, plan, normalizedDate);
+        if(!scheduled.day || scheduled.day._id.toString() !== day){
+            throw new AppError("Ovaj dan nije zakazan za izabrani datum", 400);
+        }
 
         return workoutSessionRepository.upsertSession({
             user: userId,
             workoutPlan: plan._id,
             day,
             date: normalizedDate,
+        });
+    }
+
+    async function skipDay(userId, requesterRole, {workoutPlan, day, date}){
+        const plan = await loadOwnedPlan(workoutPlan, userId, requesterRole);
+
+        if(!day || !mongoose.Types.ObjectId.isValid(day)){
+            throw new AppError("Nevažeći ID dana", 400);
+        }
+
+        const normalizedDate = normalizeDate(date);
+        assertNotFutureDate(normalizedDate);
+
+        const scheduled = await loadActivePlanSchedule(userId, plan, normalizedDate);
+        if(!scheduled.day || scheduled.day._id.toString() !== day){
+            throw new AppError("Ovaj dan nije zakazan za izabrani datum", 400);
+        }
+
+        return workoutSessionRepository.upsertSession({
+            user: userId,
+            workoutPlan: plan._id,
+            day,
+            date: normalizedDate,
+            status: "skipped",
         });
     }
 
@@ -116,5 +150,5 @@ export function createWorkoutSessionService({ workoutSessionRepository, workoutP
         await workoutSessionRepository.deleteById(id);
     }
 
-    return { getNextDay, getSessions, completeDay, deleteSession };
+    return { getNextDay, getSessions, completeDay, skipDay, deleteSession };
 }

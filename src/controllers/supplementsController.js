@@ -29,8 +29,8 @@ export function createSupplementsController({ supplementService }){
 
     async function createSupplement(req,res){
         try{
-            const {name, imageUrl} = req.body;
-            const newSupplement = await supplementService.createSupplement({name, imageUrl});
+            const {name, imageUrl, description} = req.body;
+            const newSupplement = await supplementService.createSupplement({name, imageUrl, description});
             res.status(201).json(newSupplement);
         }catch(error){
             handleError(res, error, "createSupplement");
@@ -39,8 +39,8 @@ export function createSupplementsController({ supplementService }){
 
     async function updateSupplement(req,res){
         try{
-            const {name, imageUrl} = req.body;
-            const updatedSupplement = await supplementService.updateSupplement(req.params.id, {name, imageUrl});
+            const {name, imageUrl, description} = req.body;
+            const updatedSupplement = await supplementService.updateSupplement(req.params.id, {name, imageUrl, description});
             res.status(200).json(updatedSupplement);
         }catch(error){
             handleError(res, error, "updateSupplement");

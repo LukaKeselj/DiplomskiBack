@@ -5,18 +5,18 @@ export function createWorkoutSessionRepository(){
         return WorkoutSession.find({user: userId, workoutPlan: workoutPlanId}).sort({createdAt: -1});
     }
 
-    function findLastByUserAndPlan(userId, workoutPlanId){
-        return WorkoutSession.findOne({user: userId, workoutPlan: workoutPlanId}).sort({createdAt: -1});
+    function findByUserAndDateRange(userId, startDate, endDate){
+        return WorkoutSession.find({user: userId, date: {$gte: startDate, $lte: endDate}});
     }
 
     function findById(id){
         return WorkoutSession.findById(id);
     }
 
-    function upsertSession({user, workoutPlan, day, date}){
+    function upsertSession({user, workoutPlan, day, date, status = "completed"}){
         return WorkoutSession.findOneAndUpdate(
             {user, day, date},
-            {$set: {workoutPlan}},
+            {$set: {workoutPlan, status}},
             {new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true}
         );
     }
@@ -25,5 +25,5 @@ export function createWorkoutSessionRepository(){
         return WorkoutSession.findByIdAndDelete(id);
     }
 
-    return { findAllByUserAndPlan, findLastByUserAndPlan, findById, upsertSession, deleteById };
+    return { findAllByUserAndPlan, findByUserAndDateRange, findById, upsertSession, deleteById };
 }

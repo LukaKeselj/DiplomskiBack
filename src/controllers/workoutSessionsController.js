@@ -11,8 +11,8 @@ function handleError(res, error, context){
 export function createWorkoutSessionsController({ workoutSessionService }){
     async function getNextDay(req,res){
         try{
-            const {workoutPlan} = req.query;
-            const result = await workoutSessionService.getNextDay(req.userId, workoutPlan, req.userRole);
+            const {workoutPlan, date} = req.query;
+            const result = await workoutSessionService.getNextDay(req.userId, workoutPlan, req.userRole, date);
             res.status(200).json(result);
         }catch(error){
             handleError(res, error, "getNextDay");
@@ -39,6 +39,16 @@ export function createWorkoutSessionsController({ workoutSessionService }){
         }
     }
 
+    async function skipDay(req,res){
+        try{
+            const {workoutPlan, day, date} = req.body;
+            const session = await workoutSessionService.skipDay(req.userId, req.userRole, {workoutPlan, day, date});
+            res.status(200).json(session);
+        }catch(error){
+            handleError(res, error, "skipDay");
+        }
+    }
+
     async function deleteSession(req,res){
         try{
             await workoutSessionService.deleteSession(req.params.id, req.userId, req.userRole);
@@ -48,5 +58,5 @@ export function createWorkoutSessionsController({ workoutSessionService }){
         }
     }
 
-    return { getNextDay, getSessions, completeDay, deleteSession };
+    return { getNextDay, getSessions, completeDay, skipDay, deleteSession };
 }

@@ -36,7 +36,7 @@ function getCurrentWeekBoundaries(){
     return {start, end};
 }
 
-export function createWeightLogService({ weightLogRepository, userRepository }){
+export function createWeightLogService({ weightLogRepository }){
     async function getAllLogs(userId, {date} = {}){
         const filter = {};
         if(date !== undefined){
@@ -55,11 +55,6 @@ export function createWeightLogService({ weightLogRepository, userRepository }){
             date: normalizedDate,
             weight,
         });
-
-        const latest = await weightLogRepository.findLatestByUser(userId);
-        if(latest && latest.date.getTime() === normalizedDate.getTime()){
-            await userRepository.updateById(userId, {weight});
-        }
 
         return log;
     }
