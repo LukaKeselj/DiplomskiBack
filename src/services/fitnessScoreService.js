@@ -19,6 +19,14 @@ function getWeekStart(date){
     return start;
 }
 
+// Nutrition plans aren't pinned to real weekdays — the cycle starts at activation
+// (that day is plan.days[0]) and repeats based on how many days the plan has.
+function getNutritionCycleDayIndex(startDate, targetDate, dayCount){
+    if(!startDate || !dayCount) return 0;
+    const diffDays = Math.round((targetDate - startDate) / MS_PER_DAY);
+    return ((diffDays % dayCount) + dayCount) % dayCount;
+}
+
 function addDays(date, amount){
     const next = new Date(date);
     next.setUTCDate(next.getUTCDate() + amount);
@@ -33,10 +41,26 @@ function clampScore(value){
     return Math.max(0, Math.min(100, Math.round(value)));
 }
 
+const BMI_HEALTHY_MIN = 18.5;
+const BMI_HEALTHY_MAX = 24.9;
+const BMI_LOW_FLOOR = 15;
+const BMI_HIGH_CEIL = 35;
+
+// Score peaks in the healthy BMI range and tapers linearly toward 0 at the under/overweight extremes,
+// so logging a weight only scores well when it reflects a healthy height-to-weight ratio.
+function computeBmiScore(bmi){
+    if(bmi >= BMI_HEALTHY_MIN && bmi <= BMI_HEALTHY_MAX) return 100;
+    if(bmi < BMI_HEALTHY_MIN){
+        return clampScore(((bmi - BMI_LOW_FLOOR) / (BMI_HEALTHY_MIN - BMI_LOW_FLOOR)) * 100);
+    }
+    return clampScore(100 - ((bmi - BMI_HEALTHY_MAX) / (BMI_HIGH_CEIL - BMI_HEALTHY_MAX)) * 100);
+}
+
 function computeWeek({
     weekStart, weekEnd, windowEnd,
-    plan, planStart, activeSupplementIds,
-    completedSessionDates, nutritionLoggedDates, weightLoggedDates, takenSupplementDates,
+    plan, planStart, activeSupplementIds, heightCm,
+    nutritionPlan, nutritionPlanStart,
+    completedSessionDates, nutritionLoggedDates, loggedNutritionItemKeys, weightByDate, takenSupplementDates,
 }){
     if(windowEnd < weekStart){
         return {
@@ -45,8 +69,8 @@ function computeWeek({
             overall: null,
             breakdown: {
                 workout: {score: null, completed: 0, expected: 0},
-                nutrition: {score: null, loggedDays: 0, totalDays: 0},
-                weight: {score: null, logged: false},
+                nutrition: {score: null, loggedDays: 0, totalDays: 0, completed: 0, expected: 0},
+                weight: {score: null, logged: false, weight: null, bmi: null},
                 supplements: {score: null, completed: 0, expected: 0},
             },
         };
@@ -74,17 +98,41 @@ function computeWeek({
         const date = addDays(weekStart, offset);
         if(nutritionLoggedDates.has(toIsoDate(date))) nutritionLoggedDays++;
     }
-    const nutritionScore = clampScore((nutritionLoggedDays / windowDays) * 100);
 
-    let weightLogged = false;
-    for(let offset = 0; offset < windowDays; offset++){
-        const date = addDays(weekStart, offset);
-        if(weightLoggedDates.has(toIsoDate(date))){
-            weightLogged = true;
-            break;
+    let nutritionExpected = 0;
+    let nutritionCompleted = 0;
+    if(nutritionPlan?.days?.length && nutritionPlanStart){
+        for(let offset = 0; offset < windowDays; offset++){
+            const date = addDays(weekStart, offset);
+            if(date < nutritionPlanStart) continue;
+            const dayIndex = getNutritionCycleDayIndex(nutritionPlanStart, date, nutritionPlan.days.length);
+            const planDay = nutritionPlan.days[dayIndex];
+            const isoDate = toIsoDate(date);
+            for(const item of planDay.items){
+                nutritionExpected++;
+                if(loggedNutritionItemKeys.has(`${isoDate}_${item._id.toString()}`)) nutritionCompleted++;
+            }
         }
     }
-    const weightScore = weightLogged ? 100 : 0;
+    // With an active plan, score adherence to its planned items; otherwise fall back
+    // to plain logging consistency since there's no plan to measure against.
+    const nutritionScore = nutritionExpected > 0
+        ? clampScore((nutritionCompleted / nutritionExpected) * 100)
+        : clampScore((nutritionLoggedDays / windowDays) * 100);
+
+    let weightLogged = false;
+    let latestWeight = null;
+    for(let offset = 0; offset < windowDays; offset++){
+        const date = addDays(weekStart, offset);
+        const value = weightByDate.get(toIsoDate(date));
+        if(value !== undefined){
+            weightLogged = true;
+            latestWeight = value;
+        }
+    }
+    const heightM = heightCm / 100;
+    const bmi = weightLogged && heightM > 0 ? latestWeight / (heightM * heightM) : null;
+    const weightScore = bmi !== null ? computeBmiScore(bmi) : 0;
 
     let supplementsExpected = 0;
     let supplementsCompleted = 0;
@@ -119,8 +167,8 @@ function computeWeek({
         overall,
         breakdown: {
             workout: {score: workoutScore, completed: workoutCompleted, expected: workoutExpected},
-            nutrition: {score: nutritionScore, loggedDays: nutritionLoggedDays, totalDays: windowDays},
-            weight: {score: weightScore, logged: weightLogged},
+            nutrition: {score: nutritionScore, loggedDays: nutritionLoggedDays, totalDays: windowDays, completed: nutritionCompleted, expected: nutritionExpected},
+            weight: {score: weightScore, logged: weightLogged, weight: latestWeight, bmi: bmi !== null ? Math.round(bmi * 10) / 10 : null},
             supplements: {score: supplementsScore, completed: supplementsCompleted, expected: supplementsExpected},
         },
     };
@@ -131,6 +179,7 @@ export function createFitnessScoreService({
     workoutPlanRepository,
     workoutSessionRepository,
     nutritionLogRepository,
+    nutritionPlanRepository,
     weightLogRepository,
     supplementLogRepository,
     userSupplementRepository,
@@ -145,17 +194,21 @@ export function createFitnessScoreService({
         const currentWeekStart = getWeekStart(today);
         const earliestWeekStart = addDays(currentWeekStart, -(weeksCount - 1) * WEEK_LENGTH);
 
-        const [plan, userSupplements, sessions, nutritionGroups, weightLogs, takenSupplementLogs] = await Promise.all([
+        const [plan, nutritionPlan, userSupplements, sessions, nutritionLogs, weightLogs, takenSupplementLogs] = await Promise.all([
             user.activeWorkoutPlan ? workoutPlanRepository.findById(user.activeWorkoutPlan) : null,
+            user.activeNutritionPlan ? nutritionPlanRepository.findById(user.activeNutritionPlan) : null,
             userSupplementRepository.findAllByUser(userId),
             workoutSessionRepository.findByUserAndDateRange(userId, earliestWeekStart, today),
-            nutritionLogRepository.sumByUserAndDateRange(userId, earliestWeekStart, today),
+            nutritionLogRepository.findAllByUser(userId, {date: {$gte: earliestWeekStart, $lte: today}}),
             weightLogRepository.findAllByUser(userId, {date: {$gte: earliestWeekStart, $lte: today}}),
             supplementLogRepository.findAllByUser(userId, {date: {$gte: earliestWeekStart, $lte: today}, taken: true}),
         ]);
 
         const planStart = plan && user.activeWorkoutPlanStartDate
             ? normalizeDate(user.activeWorkoutPlanStartDate)
+            : null;
+        const nutritionPlanStart = nutritionPlan && user.activeNutritionPlanStartDate
+            ? normalizeDate(user.activeNutritionPlanStartDate)
             : null;
         const activeSupplementIds = userSupplements
             .filter((item) => item.active)
@@ -166,8 +219,15 @@ export function createFitnessScoreService({
                 .filter((session) => session.status === "completed")
                 .map((session) => toIsoDate(normalizeDate(session.date)))
         );
-        const nutritionLoggedDates = new Set(nutritionGroups.map((group) => group._id));
-        const weightLoggedDates = new Set(weightLogs.map((log) => toIsoDate(normalizeDate(log.date))));
+        const nutritionLoggedDates = new Set(
+            nutritionLogs.map((log) => toIsoDate(normalizeDate(log.date)))
+        );
+        const loggedNutritionItemKeys = new Set(
+            nutritionLogs
+                .filter((log) => log.nutritionPlanItem)
+                .map((log) => `${toIsoDate(normalizeDate(log.date))}_${log.nutritionPlanItem.toString()}`)
+        );
+        const weightByDate = new Map(weightLogs.map((log) => [toIsoDate(normalizeDate(log.date)), log.weight]));
         const takenSupplementDates = new Set(
             takenSupplementLogs.map(
                 (log) => `${log.supplement.toString()}_${toIsoDate(normalizeDate(log.date))}`
@@ -187,9 +247,13 @@ export function createFitnessScoreService({
                 plan,
                 planStart,
                 activeSupplementIds,
+                heightCm: user.height,
+                nutritionPlan,
+                nutritionPlanStart,
                 completedSessionDates,
                 nutritionLoggedDates,
-                weightLoggedDates,
+                loggedNutritionItemKeys,
+                weightByDate,
                 takenSupplementDates,
             }));
         }
